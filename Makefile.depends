@@ -1,0 +1,6 @@
+main.py-build.py: ./main.py \
+  ./imp.py 
+	py preprocessor.py main.py > main.py-build.py
+Makefile.depends: $(filter-out $(shell find -name '*.py' -not -path './.*'),./main.py \
+  ./imp.py )
+	py preprocessor.py main.py --dependencies > Makefile.depends
