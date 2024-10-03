@@ -1,4 +1,3 @@
-import itertools
 import sys
 import os
 
@@ -137,7 +136,7 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
                 f"{indent * 4}tb = tb.tb_next",
                 f"{indent * 3}print('\\n'.join(frame_lines))",
                 f"{indent * 3}print(type(e).__name__ + (': ' if str(e) else '') + str(e))",
-                f"{indent * 3}exit()",
+                f"{indent * 3}exit(1)",
                 f"{indent}return wrapped",
                 f"def _HELPER_translate_line_no(line_no):",
             ]
@@ -172,12 +171,12 @@ if __name__ == "__main__":
     output, modules = process_file(sys.argv[1],
         auto_detect_entry_points="--auto-detect-entry-points" in sys.argv)
     if "--dependencies" in sys.argv:
-        dep_filename_iter = itertools.chain((x for x in (sys.argv[1],)),
-            (module.file_path for module in modules))
-        deps = '\\\n  '.join(f"./{filename} " for filename in dep_filename_iter)
-        print(f"{sys.argv[1]}-build.py: {deps}")
-        print(f"\tpy preprocessor.py {sys.argv[1]} > {sys.argv[1]}-build.py")
-        print(f"Makefile.depends: $(filter-out $(shell find -name '*.py' -not -path './.*'),{deps})")
-        print(f"\tpy preprocessor.py {sys.argv[1]} --dependencies > Makefile.depends")
+        dep_paths = [module.file_path for module in modules] + [sys.argv[1]]
+        deps = '\\\n  '.join(f"./{path} " for path in dep_paths)
+        build_file_name = f"{sys.argv[1].split('.')[0]}-build.py"
+        print(f"{build_file_name}: {deps}")
+        print(f"\tpython preprocessor.py {sys.argv[1]} > {build_file_name}")
+        print(f"Makefile.depends: $(filter $(shell find -name '*.py' -not -path './.*'),{deps})")
+        print(f"\tpython preprocessor.py {sys.argv[1]} --dependencies > Makefile.depends")
     else:
         print(output)
