@@ -3,7 +3,7 @@ import time
 
 class Motor:
     """Wraps a PiE KoalaBear-controlled motor."""
-    def __init__(self, robot, debug_logger, controller_id, motor):
+    def __init__(self, robot, controller_id, motor, debug_logger=None):
         self._controller = controller_id
         self._motor = motor
         self._robot = robot
@@ -46,7 +46,7 @@ class Motor:
 
 class PidMotor(Motor):
     """Adds custom PID control to a Motor since PiE's implementation is weird."""
-    def __init__(self, robot, debug_logger, controller_id, motor):
+    def __init__(self, robot, controller_id, motor, debug_logger=None):
         super().__init__(robot, debug_logger, controller_id, motor)
         super().set_pid(None, None, None)
         self._clear_samples()
@@ -102,8 +102,8 @@ class PidMotor(Motor):
     
 class MotorPair(Motor):
     """Drives a pair of Motors together as if they were one."""
-    def __init__(self, robot, debug_logger, controller_id, motor_suffix,
-        paired_controller_id, paired_motor_suffix, paired_motor_inverted):
+    def __init__(self, robot, controller_id, motor_suffix, paired_controller_id,
+        paired_motor_suffix, paired_motor_inverted, debug_logger=None):
         super().__init__(robot, debug_logger, controller_id, motor_suffix)
         self._paired_motor = Motor(robot, debug_logger, paired_controller_id,
             paired_motor_suffix).set_invert(paired_motor_inverted)
@@ -130,7 +130,7 @@ class MotorPair(Motor):
 class Wheel:
     """Encapsulates a Motor attached to a wheel that can calculate distance travelled given the
     motor's ticks per rotation and the wheel's radius."""
-    def __init__(self, debug_logger, motor, radius, ticks_per_rotation):
+    def __init__(self, motor, radius, ticks_per_rotation, debug_logger=None):
         self._motor = motor
         self._radius = radius
         self._ticks_per_rot = ticks_per_rotation
@@ -147,7 +147,7 @@ class Arm:
     """Encapsulates a Motor attached to an arm that can calculate the height of the arm's end
     relative to the motor and detect out-of-bounds movement given the motor's ticks per rotation,
     the arm's length, and the maximum angle."""
-    def __init__(self, debug_logger, motor, length, ticks_per_rotation, max_height):
+    def __init__(self, motor, length, ticks_per_rotation, max_height, debug_logger=None):
         self._motor = motor
         self._length = length
         self._ticks_per_rot = ticks_per_rotation
@@ -191,8 +191,8 @@ class Hand:
     and hand length, optionally stopping when encountering resistance."""
     _MAX_HISTORY_LENGTH = 40000
     _STRUGGLE_THRESHOLD = 0.02 # meters. hand must move this far in struggle_duration seconds.
-    def __init__(self, debug_logger, motor, ticks_per_rotation, max_width, hand_offset, hand_length,
-            struggle_duration, start_open):
+    def __init__(self, motor, ticks_per_rotation, max_width, hand_offset, hand_length,
+            struggle_duration, start_open, debug_logger=None):
         # disable struggle checking if struggle_duration == 0
         self._debug_logger = debug_logger
         self._motor = motor
@@ -213,8 +213,8 @@ class Hand:
         self._width_history = [0, None] * self._MAX_HISTORY_LENGTH
         self._hist_pos = 0
         self._finished = True
-        print(f"Inititlized hand. open_enc = {self._open_enc} close_enc = {self._close_enc} "
-            + f"init_enc = {self._init_enc}")
+        #print(f"Inititlized hand. open_enc = {self._open_enc} close_enc = {self._close_enc} "
+        #    + f"init_enc = {self._init_enc}")
     def toggle_state(self):
         """Swaps the hand's state between open and closed and starts moving accordingly."""
         self._state = not self._state
@@ -239,11 +239,11 @@ class Hand:
             else:
                 struggling = False
             if reached_end or struggling:
-                print(f"Stopping hand. reached_end = {reached_end} enc = {enc} "
-                    + f"open_enc = {self._open_enc} close_enc = {self._close_enc} "
-                    + f"init_enc = {self._init_enc} "
-                    + f"struggling = {struggling} "
-                    + f"lookbehind width = {self._struggle_duration and lookbehind}")
+                #print(f"Stopping hand. reached_end = {reached_end} enc = {enc} "
+                #    + f"open_enc = {self._open_enc} close_enc = {self._close_enc} "
+                #    + f"init_enc = {self._init_enc} "
+                #    + f"struggling = {struggling} "
+                #    + f"lookbehind width = {self._struggle_duration and lookbehind}")
                 self._finished = True
                 self._motor.set_velocity(0)
                 return True
