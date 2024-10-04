@@ -1,0 +1,1 @@
+about misha. idk how much python do i know but at least more than java. im from ukraine btw))
