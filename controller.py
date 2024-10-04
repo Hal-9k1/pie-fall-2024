@@ -1,3 +1,5 @@
+from layer import LayerSetupInfo
+
 class RobotController:
     """Manages robot state between setup and the main loops."""
 
@@ -7,7 +9,7 @@ class RobotController:
         Positional arguments:
         robot -- the Robot or Robot-like object used to communicate with hardware
         """
-        self._robot = robot
+        self._layer_setup_info = LayerSetupInfo(robot, self)
         self._update_listeners = []
 
     def setup(self, layer_classes):
@@ -16,7 +18,7 @@ class RobotController:
         Positional arguments:
         layer_classes -- the list of layer classes, bottommost layer first
         """
-        self._layers = [Class(self._robot) for Class in layer_classes]
+        self._layers = [Class(self._layer_setup_info) for Class in layer_classes]
 
     def update(self):
         """Performs incremental work.

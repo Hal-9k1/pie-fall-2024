@@ -63,3 +63,25 @@ class InputGenerator(Layer):
 
     def is_task_done(self):
         return False
+
+
+class LayerSetupInfo:
+    """Contains the information needed to initialize a layer."""
+
+    def __init__(self, robot, robot_controller):
+        """Creates a LayerSetupInfo.
+
+        Positional arguments:
+        robot -- the Robot or Robot-like object the layer may use to communicate with hardware
+        robot_controller -- the RobotController that will run the layer
+        """
+        self._robot = robot
+        self._robot_controller = robot_controller
+
+    def get_robot():
+        """Returns the Robot or Robot-like object used to communicate with hardware."""
+        return self._robot
+
+    def add_update_listener(listener):
+        """Registers a function to be called on every update of the owning RobotController."""
+        self._robot_controller.add_update_listener(listener)
