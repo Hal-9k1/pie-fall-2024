@@ -12,7 +12,7 @@ class Layer(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def is_task_done():
+    def is_task_done(self):
         """Returns whether the layer is ready to accept a new task.
 
         Returns True if the layer has finished processing the last accepted task, if any.
@@ -20,7 +20,7 @@ class Layer(metaclass=ABCMeta):
         raise NotImplemented
 
     @abstractmethod
-    def update():
+    def update(self):
         """Returns the next subordinate task produced from this layer's current task.
 
         Calculates the next subordinate task that should be submitted to the below layer. The return
@@ -78,7 +78,7 @@ class LayerSetupInfo:
         self._robot = robot
         self._robot_controller = robot_controller
 
-    def get_robot():
+    def get_robot(self):
         """Returns the Robot or Robot-like object used to communicate with hardware."""
         return self._robot
 
