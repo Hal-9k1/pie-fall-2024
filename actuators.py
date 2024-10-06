@@ -1,13 +1,16 @@
 import math
 import time
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Motor:
     """Wraps a PiE KoalaBear-controlled motor."""
-    def __init__(self, robot, controller_id, motor, debug_logger=None):
+    def __init__(self, robot, controller_id, motor):
         self._controller = controller_id
         self._motor = motor
         self._robot = robot
-        self._debug_logger = debug_logger
         self._is_inverted = False
     def set_invert(self, invert):
         self._set("invert", invert)
@@ -46,8 +49,8 @@ class Motor:
 
 class PidMotor(Motor):
     """Adds custom PID control to a Motor since PiE's implementation is weird."""
-    def __init__(self, robot, controller_id, motor, debug_logger=None):
-        super().__init__(robot, debug_logger, controller_id, motor)
+    def __init__(self, robot, controller_id, motor):
+        super().__init__(robot, controller_id, motor)
         super().set_pid(None, None, None)
         self._clear_samples()
         self._max_samples = 200
@@ -99,13 +102,14 @@ class PidMotor(Motor):
             / (self._time_samples[self._cur_sample] - self._time_samples[self._cur_sample - i]))
             for i in range(self._deriv_samples)) / self._deriv_samples
         return self._coeffs[2] * avg_deriv
-    
+
+
 class MotorPair(Motor):
     """Drives a pair of Motors together as if they were one."""
     def __init__(self, robot, controller_id, motor_suffix, paired_controller_id,
-        paired_motor_suffix, paired_motor_inverted, debug_logger=None):
-        super().__init__(robot, debug_logger, controller_id, motor_suffix)
-        self._paired_motor = Motor(robot, debug_logger, paired_controller_id,
+        paired_motor_suffix, paired_motor_inverted):
+        super().__init__(robot, controller_id, motor_suffix)
+        self._paired_motor = Motor(robot, paired_controller_id,
             paired_motor_suffix).set_invert(paired_motor_inverted)
         self._inverted = False
     def set_invert(self, invert):
@@ -127,14 +131,14 @@ class MotorPair(Motor):
         self._paired_motor.set_velocity(velocity)
         return self
 
+
 class Wheel:
     """Encapsulates a Motor attached to a wheel that can calculate distance travelled given the
     motor's ticks per rotation and the wheel's radius."""
-    def __init__(self, motor, radius, ticks_per_rotation, debug_logger=None):
+    def __init__(self, motor, radius, ticks_per_rotation):
         self._motor = motor
         self._radius = radius
         self._ticks_per_rot = ticks_per_rotation
-        self._debug_logger = debug_logger
     def get_distance(self):
         """Interpreting the motor as being attached to a wheel, converts the encoder readout of the
         motor to a distance traveled by the wheel."""
@@ -143,15 +147,15 @@ class Wheel:
         """Sets the velocity of the underlying motor."""
         self._motor.set_velocity(velocity)
 
+
 class Arm:
     """Encapsulates a Motor attached to an arm that can calculate the height of the arm's end
     relative to the motor and detect out-of-bounds movement given the motor's ticks per rotation,
     the arm's length, and the maximum angle."""
-    def __init__(self, motor, length, ticks_per_rotation, max_height, debug_logger=None):
+    def __init__(self, motor, length, ticks_per_rotation, max_height):
         self._motor = motor
         self._length = length
         self._ticks_per_rot = ticks_per_rotation
-        self._debug_logger = debug_logger
         self._max_height = max_height
         self._zero_height = 0 # bootstrap for get_height
         self._zero_height = self.get_height()
@@ -186,15 +190,15 @@ class Arm:
         else:
             return True
 
+
 class Hand:
     """A Motor connected to a hand that can toggle its open/closed state given the maximum width
     and hand length, optionally stopping when encountering resistance."""
     _MAX_HISTORY_LENGTH = 40000
     _STRUGGLE_THRESHOLD = 0.02 # meters. hand must move this far in struggle_duration seconds.
     def __init__(self, motor, ticks_per_rotation, max_width, hand_offset, hand_length,
-            struggle_duration, start_open, debug_logger=None):
+            struggle_duration, start_open):
         # disable struggle checking if struggle_duration == 0
-        self._debug_logger = debug_logger
         self._motor = motor
         self._ticks_per_rot = ticks_per_rotation
         self._hand_offset = hand_offset
@@ -228,18 +232,18 @@ class Hand:
             enc = self._motor.get_encoder()
             reached_end = (self._state and enc > self._open_enc) or (not self._state and
                 enc < self._close_enc)
-            #debug_logger.print(f"hand state {self._state} width {width} open width "
+            #logger.info(f"hand state {self._state} width {width} open width "
             #    f"{self._open_width} close width {self._close_width}")
             # don't check if struggle duration is 0
             if self._struggle_duration:
                 lookbehind = self._get_hist_lookbehind()
-                self._debug_logger.print(f"lookbehind: {lookbehind}")
+                logger.info(f"lookbehind: {lookbehind}")
                 struggling = (bool(lookbehind) and abs(lookbehind - self._get_width())
                     < self._STRUGGLE_THRESHOLD)
             else:
                 struggling = False
             if reached_end or struggling:
-                #print(f"Stopping hand. reached_end = {reached_end} enc = {enc} "
+                #logger.info(f"Stopping hand. reached_end = {reached_end} enc = {enc} "
                 #    + f"open_enc = {self._open_enc} close_enc = {self._close_enc} "
                 #    + f"init_enc = {self._init_enc} "
                 #    + f"struggling = {struggling} "
@@ -284,6 +288,7 @@ class Hand:
                 max_idx = mid_idx - 1
             if min_idx == max_idx:
                 return self._get_hist_width(hist_idx)
+
 
 class Servo:
     """Wraps a PiE servo."""
