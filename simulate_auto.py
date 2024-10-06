@@ -5,4 +5,4 @@ build = importlib.import_module(sys.argv[1])
 build.autonomous_setup()
 while True:
     #time.sleep(1 / 1000)
-    mainbuild.autonomous_main()
+    build.autonomous_main()
