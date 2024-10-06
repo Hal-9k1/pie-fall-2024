@@ -12,7 +12,7 @@ class ModuleInfo:
 def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, import_cursor=0,
         auto_detect_entry_points=True):
     """Preprocesses a python script by recursively transcluding imported files."""
-    # if not top level, returns the script without import statements
+
     if not os.path.exists(file_path):
         #print(file_path)
         return
@@ -168,17 +168,83 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
             return "".join(module_buffer)
 
 if __name__ == "__main__":
+    if "--help" in sys.argv:
+        # underline/bold/end style underline ansi escape codes
+        ul = "\u001b[4m" if sys.stdout.isatty() else ""
+        bd = "\u001b[1m" if sys.stdout.isatty() else ""
+        es = "\u001b[0m" if sys.stdout.isatty() else ""
+        print(f"{bd}{sys.argv[0]}{es}: {process_file.__doc__}")
+        print()
+        print("Synopsis:")
+        print(
+            f"  {bd}{sys.argv[0]}{es} {ul}entryfile{es} "
+            f"[{bd}--build-file={es}{ul}buildfile{es}] [{bd}--auto-detect-entry-points{es}]"
+        )
+        print(
+            f"  {bd}{sys.argv[0]}{es} {ul}entryfile{es} "
+            f"{bd}--dependency-file={es}{ul}depfile{es} {bd}--build-file={es}{ul}buildfile{es}"
+        )
+        print(
+            f"  {bd}{sys.argv[0]} --help{es}"
+        )
+        print()
+        print(
+            f"Writes to {ul}buildfile{es} (or standard output if unspecified) a single Python "
+            f"script containing the contents of {ul}entryfile{es} and all its imported non-builtin "
+            f"modules, which can be run independently. If {bd}--auto-detect-entry-points{es} is set, "
+            f"function definitions in {ul}entryfile{es} will be wrapped with error-handling code "
+            f"that preserves original file names in stack traces. This may cause inaccuracies if "
+            f"functions in {ul}entryfile{es} call each other. If not set, only functions annotated "
+            f"with '@_PREP_ENTRY_POINT' in {ul}entryfile{es} will be wrapped with this handling "
+            f"code."
+        )
+        print(
+            f"If {bd}--dependency-file{es} is specified, the preprocessed file is not output. "
+            f"Instead, Makefile rules are written to {ul}depfile{es} that rebuild {ul}buildfile{es} "
+            f"(which must be specified in this form of the command) and {ul}depfile{es} when "
+            f"imported files are changed."
+        )
+        print(
+            f"If an imported file cannot be found, it is treated as a builtin Python module and "
+            f"the import statement is left intact in the preprocessed output and omitted from the "
+            f"Makefile rule dependencies. Importing comma-separated names from modules using the "
+            f"'{bd}from{es} {ul}module{es} {bd}import{es} {ul}name{es}, ... ' syntax is not "
+            f"supported."
+        )
+        print(
+            f"Imports from packages are supported, but all imports will be resolved from the "
+            f"current directory; relative imports are not supported."
+        )
+        print(
+            f"If {ul}buildfile{es} or {ul}depfile{es} contain spaces or shell-interpreted "
+            f"characters, the whole argument (including the option) must be quoted."
+        )
+        exit(0)
     output, modules = process_file(sys.argv[1],
         auto_detect_entry_points="--auto-detect-entry-points" in sys.argv)
-    if "--dependencies" in sys.argv:
-        dep_paths = [module.file_path for module in modules] + [sys.argv[1]]
+    depfile_opt = "--dependency-file="
+    # Use last duplicate option:
+    dep_fn = next((arg[len(depfile_opt):] for arg in reversed(sys.argv)
+        if arg.startswith(depfile_opt)), None)
+    build_fn_opt = "--build-file="
+    build_fn = next((arg[len(build_fn_opt):] for arg in reversed(sys.argv)
+        if arg.startswith(build_fn_opt)), None)
+    if dep_fn:
+        if not build_fn:
+            print("--build-file must be specified if writing dependencies.")
+            exit(1)
+        # Include both entry file and this preprocessor as dependencies:
+        dep_paths = [module.file_path for module in modules] + sys.argv[:2]
         deps = '\\\n  '.join(f"./{path} " for path in dep_paths)
-        build_fn_opt = "--build-file-name="
-        build_fn = next((arg[len(build_fn_opt):] for arg in reversed(sys.argv)
-            if arg.startswith(build_fn_opt)), f"{sys.argv[1].split('.')[0]}.build.py")
-        print(f"{build_fn}: {deps}")
-        print(f"\tpython preprocessor.py {sys.argv[1]} > {build_fn}")
-        print(f"Makefile.depends: $(filter $(shell find -name '*.py' -not -path './.*'),{deps})")
-        print(f"\tpython preprocessor.py {sys.argv[1]} --dependencies > Makefile.depends")
+        with open(dep_fn, "w") as output_file:
+            print(f"{build_fn}: {deps}", file=output_file)
+            print(f"\tpython {sys.argv[0]} {sys.argv[1]} --build-file={build_fn}",
+                file=output_file)
+            print(f"{dep_fn}: $(filter $(shell find -name '*.py' -not -path './.*'),{deps})",
+                file=output_file)
+            print((f"\tpython {sys.argv[0]} {sys.argv[1]} --dependency-file={dep_fn} "
+                f"--build-file={build_fn}"),
+                file=output_file)
     else:
-        print(output)
+        with open(build_fn, "w") as build_file:
+            print(output, file=build_file)
