@@ -2,7 +2,7 @@
 Makefile.depends
 
 # Preprocessed files
-*-build.py
+*build.py
 
 # Generated cache files
 __pycache__/

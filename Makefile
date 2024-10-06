@@ -1,25 +1,18 @@
 eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
 
 .PHONY: all test copy clean
-all: main-build.py
-test: main-build.py
-	python -c '\
-	import time\
-	import main-build\
-	main-build.autonomous_setup()\
-	while True:\
-		#time.sleep(1 / 1000)\
-		main-build.autonomous_main()\
-	'
-copy: main-build.py
-	vim -c 'normal ggvG$"+y' -c ':q' <(python preprocessor.py main.py)
+all: mainbuild.py
+test: mainbuild.py
+	python simulateauto.py $<
+copy: mainbuild.py
+	vim -c 'normal ggvG$$"+y' -c ':q' $<
 clean:
-	rm -f Makefile.depends main-build.py
+	rm -f Makefile.depends mainbuild.py
 
 # Makefile.depends contains a rule to remake itself, if it exists
 ifeq (,$(wildcard Makefile.depends))
 Makefile.depends:
-	python preprocessor.py main.py --dependencies > Makefile.depends
+	python preprocessor.py main.py --dependencies --build-file-name=mainbuild.py > Makefile.depends
 endif
 
 ifeq (,$(call eq,clean,$(MAKECMDGOALS)))

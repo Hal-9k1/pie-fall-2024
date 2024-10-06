@@ -84,7 +84,7 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
                     import_line += f"{words[3]} = _HELPER_Module('{imported_module_name}')"
                 elif import_mode == "from import":
                     if words[3] == "*":
-                        import_line += f"for k, v in {module_exports}.items(): exec(k + \" = v\")"
+                        import_line += f"exec(\"for k, v in {module_exports}.items(): exec(k + \\\" = v\\\")\")"
                     else:
                         import_line += f"{words[3]} = {module_exports}[\"{words[3]}\"]"
                 elif import_mode == "from import as":
@@ -173,9 +173,11 @@ if __name__ == "__main__":
     if "--dependencies" in sys.argv:
         dep_paths = [module.file_path for module in modules] + [sys.argv[1]]
         deps = '\\\n  '.join(f"./{path} " for path in dep_paths)
-        build_file_name = f"{sys.argv[1].split('.')[0]}-build.py"
-        print(f"{build_file_name}: {deps}")
-        print(f"\tpython preprocessor.py {sys.argv[1]} > {build_file_name}")
+        build_fn_opt = "--build-file-name="
+        build_fn = next((arg[len(build_fn_opt):] for arg in reversed(sys.argv)
+            if arg.startswith(build_fn_opt)), f"{sys.argv[1].split('.')[0]}.build.py")
+        print(f"{build_fn}: {deps}")
+        print(f"\tpython preprocessor.py {sys.argv[1]} > {build_fn}")
         print(f"Makefile.depends: $(filter $(shell find -name '*.py' -not -path './.*'),{deps})")
         print(f"\tpython preprocessor.py {sys.argv[1]} --dependencies > Makefile.depends")
     else:
