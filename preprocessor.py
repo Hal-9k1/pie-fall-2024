@@ -1,5 +1,6 @@
 import sys
 import os
+import textwrap
 
 class ModuleInfo:
     __slots__ = "name", "func_call", "file_path", "body_text"
@@ -173,52 +174,51 @@ if __name__ == "__main__":
         ul = "\u001b[4m" if sys.stdout.isatty() else ""
         bd = "\u001b[1m" if sys.stdout.isatty() else ""
         es = "\u001b[0m" if sys.stdout.isatty() else ""
-        print(f"{bd}{sys.argv[0]}{es}: {process_file.__doc__}")
-        print()
-        print("Synopsis:")
+        print(f"{bd}{sys.argv[0]}{es}: {process_file.__doc__}", file=sys.stderr)
+        print(file=sys.stderr)
+        print("Synopsis:", file=sys.stderr)
         print(
             f"  {bd}{sys.argv[0]}{es} {ul}entryfile{es} "
-            f"[{bd}--build-file={es}{ul}buildfile{es}] [{bd}--auto-detect-entry-points{es}]"
-        )
+            f"[{bd}--build-file={es}{ul}buildfile{es}] [{bd}--auto-detect-entry-points{es}]",
+            file=sys.stderr)
         print(
             f"  {bd}{sys.argv[0]}{es} {ul}entryfile{es} "
-            f"{bd}--dependency-file={es}{ul}depfile{es} {bd}--build-file={es}{ul}buildfile{es}"
-        )
+            f"{bd}--dependency-file={es}{ul}depfile{es} {bd}--build-file={es}{ul}buildfile{es}",
+            file=sys.stderr)
         print(
-            f"  {bd}{sys.argv[0]} --help{es}"
-        )
-        print()
-        print(
+            f"  {bd}{sys.argv[0]} --help{es}",
+            file=sys.stderr)
+        print(file=sys.stderr)
+        print(textwrap.fill(
             f"Writes to {ul}buildfile{es} (or standard output if unspecified) a single Python "
-            f"script containing the contents of {ul}entryfile{es} and all its imported non-builtin "
-            f"modules, which can be run independently. If {bd}--auto-detect-entry-points{es} is set, "
-            f"function definitions in {ul}entryfile{es} will be wrapped with error-handling code "
-            f"that preserves original file names in stack traces. This may cause inaccuracies if "
-            f"functions in {ul}entryfile{es} call each other. If not set, only functions annotated "
-            f"with '@_PREP_ENTRY_POINT' in {ul}entryfile{es} will be wrapped with this handling "
-            f"code."
-        )
-        print(
+            f"script containing the contents of {ul}entryfile{es} and all its imported "
+            f"non-builtin modules, which can be run independently. If "
+            f"{bd}--auto-detect-entry-points{es} is set, function definitions in "
+            f"{ul}entryfile{es} will be wrapped with error-handling code that preserves original "
+            f"file names in stack traces. This may cause inaccuracies if functions in "
+            f"{ul}entryfile{es} call each other. If not set, only functions annotated with "
+            f"'@_PREP_ENTRY_POINT' in {ul}entryfile{es} will be wrapped with this handling code."),
+            file=sys.stderr)
+        print(file=sys.stderr)
+        print(textwrap.fill(
             f"If {bd}--dependency-file{es} is specified, the preprocessed file is not output. "
-            f"Instead, Makefile rules are written to {ul}depfile{es} that rebuild {ul}buildfile{es} "
-            f"(which must be specified in this form of the command) and {ul}depfile{es} when "
-            f"imported files are changed."
-        )
-        print(
+            f"Instead, Makefile rules are written to {ul}depfile{es} that rebuild "
+            f"{ul}buildfile{es} (which must be specified in this form of the command) and "
+            f"{ul}depfile{es} when imported files are changed."),
+            file=sys.stderr)
+        print(file=sys.stderr)
+        print(textwrap.fill(
             f"If an imported file cannot be found, it is treated as a builtin Python module and "
-            f"the import statement is left intact in the preprocessed output and omitted from the "
-            f"Makefile rule dependencies. Importing comma-separated names from modules using the "
-            f"'{bd}from{es} {ul}module{es} {bd}import{es} {ul}name{es}, ... ' syntax is not "
-            f"supported."
-        )
-        print(
+            f"the import statement is left intact in the preprocessed output and omitted from "
+            f"the Makefile rule dependencies. Importing comma-separated names from modules using "
+            f"the '{bd}from{es} {ul}module{es} {bd}import{es} {ul}name{es}, ... ' syntax is not "
+            f"supported."),
+            file=sys.stderr)
+        print(file=sys.stderr)
+        print(textwrap.fill(
             f"Imports from packages are supported, but all imports will be resolved from the "
-            f"current directory; relative imports are not supported."
-        )
-        print(
-            f"If {ul}buildfile{es} or {ul}depfile{es} contain spaces or shell-interpreted "
-            f"characters, the whole argument (including the option) must be quoted."
-        )
+            f"current directory; relative imports are not supported."),
+            file=sys.stderr)
         exit(0)
     output, modules = process_file(sys.argv[1],
         auto_detect_entry_points="--auto-detect-entry-points" in sys.argv)
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         if arg.startswith(build_fn_opt)), None)
     if dep_fn:
         if not build_fn:
-            print("--build-file must be specified if writing dependencies.")
+            print("--build-file must be specified if writing dependencies.", file=sys.stderr)
             exit(1)
         # Include both entry file and this preprocessor as dependencies:
         dep_paths = [module.file_path for module in modules] + sys.argv[:2]
@@ -246,5 +246,9 @@ if __name__ == "__main__":
                 f"--build-file={build_fn}"),
                 file=output_file)
     else:
-        with open(build_fn, "w") as build_file:
+        try:
+            build_file = open(build_fn, "w") if build_fn else sys.stdout
             print(output, file=build_file)
+        except Exception as e:
+            build_file.close()
+            raise e
