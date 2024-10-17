@@ -1,24 +1,25 @@
+MAKEFLAGS += --no-builtin-rules
+
 eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
 
-all: main-build.py
-test:
-	py -c '\
-	import time\
-	import main-build\
-	main-build.autonomous_setup()\
-	while True:\
-		#time.sleep(1 / 1000)\
-		main-build.autonomous_main()\
-	'
-flash:
+build_module := mainbuild
+build_name := $(build_module).py
 
+.PHONY: all test copy clean
+all: $(build_name)
+test: $(build_name)
+	python simulate_auto.py $(build_module)
+copy: $(build_name)
+	vim -c 'normal ggvG$$"+y' -c ':q' $<
+clean:
+	rm -f Makefile.depends $(build_name)
 
-
-ifeq (,$(wildcard tmp/Makefile.depends))
-tmp/Makefile.depends:
-	py preprocessor.py main.py --dependencies > Makefile.depends
+# Makefile.depends contains a rule to remake itself, if it exists
+ifeq (,$(wildcard Makefile.depends))
+Makefile.depends:
+	python preprocessor.py main.py --dependency-file=Makefile.depends --build-file=$(build_name)
 endif
 
 ifeq (,$(call eq,clean,$(MAKECMDGOALS)))
-include tmp/Makefile.depends
+include Makefile.depends
 endif
