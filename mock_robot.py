@@ -73,9 +73,8 @@ class MockRobot:
         if not device_id in self._devices:
             for device_type, default_props in self._default_device_properties.items():
                 if value_name in default_props:
-                    found_device_type = True
-                    break
-            if not found_device_type:
+                    break # Skips for-else clause
+            else:
                 raise ValueError(f"Unrecognized device property {value_name}.")
             if not device_type in self._max_devices or (self._device_counts[device_type] >= self._max_devices[device_type]):
                 raise ValueError(f"Cannot initialize more devices of type {device_type}. Check the id for typos.")

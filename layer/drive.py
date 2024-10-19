@@ -6,7 +6,7 @@ from task import AxialMovementTask
 from task import TankDriveTask
 from task import TurnTask
 from task import UnsupportedTaskError
-from unit import convert
+from units import convert
 
 
 class TwoWheelDrive(Layer):
@@ -38,13 +38,13 @@ class TwoWheelDrive(Layer):
         # might have remembered state from a different drive layer if it hasn't been power cycled
         # since then
         self._left_wheel = Wheel(
-            Motor(init_info.get_robot(), self._drive_koalabear, "a/b")
+            Motor(init_info.get_robot(), self._drive_koalabear, "a")
                 .set_invert(False)
                 .set_pid(None, None, None),
             self._wheel_radius,
             self._ticks_per_rot)
         self._right_wheel = Wheel(
-            Motor(init_info.get_robot(), self._drive_koalabear, "a/b")
+            Motor(init_info.get_robot(), self._drive_koalabear, "b")
                 .set_invert(False)
                 .set_pid(None, None, None),
             self._wheel_radius,
@@ -83,7 +83,7 @@ class TwoWheelDrive(Layer):
         if isinstance(task, AxialMovementTask):
             self._left_goal_delta = task.distance
             self._right_goal_delta = task.distance
-        elif isinstance(task, TurnMovementTask):
+        elif isinstance(task, TurnTask):
             # "Effective" as in "multiplied by all the weird constants we need"
             effective_radius = self._wheel_span_radius * self._gear_ratio * self._slipping_constant
             self._left_goal_delta = -task.angle * effective_radius

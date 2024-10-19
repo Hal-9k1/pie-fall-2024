@@ -8,7 +8,7 @@ units_per_m = {
 }
 units_per_rad = {
     "deg": 180 / pi,
-    "rev": 1 / 2 / pi
+    "rev": 1 / 2 / pi,
     "rad": 1,
 }
 valid_units = set(units_per_rad.keys()) | set(units_per_m.keys())

@@ -1,8 +1,9 @@
 from layer import Layer
 from layer import QueuedLayer
 from units import convert
-from task import UnsupportedTaskError
 from task import AxialMovementTask
+from task import TurnTask
+from task import UnsupportedTaskError
 
 class CubeDropStrategy(QueuedLayer):
     """Ambitious autonomous strategy for maximum points.
