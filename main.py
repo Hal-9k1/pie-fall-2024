@@ -1,8 +1,11 @@
-#from layer.drive import TwoWheelDrive
-#from layer import SimpleDriveTest
-#from layer.controls import TankDriveControls
-#from layer.controls import GamepadInputGenerator
 from controller import RobotController
+from layer.controls import GamepadInputGenerator
+from layer.controls import TankDriveControls
+from layer.drive import TwoWheelDrive
+from layer.strategy import CubeDropStrategy
+from layer.strategy import CubePlateStrategy
+from layer.strategy import SafeStrategy
+from layer.strategy import SimpleDriveTest
 from mock_robot import MockRobot
 
 try:
@@ -10,21 +13,19 @@ try:
     is_dawn = True
 except NameError:
     robot = MockRobot({
-        "koalabear": 0,
+        "koalabear": 2,
         "servocontroller": 0,
     })
     is_dawn = False
+
 auto_layer_classes = [
-#    TwoWheelDrive,
-#    SimpleDriveTest,
-    RestaurantPrinter,
-    RestaurantSectionLayer,
-    RestaurantMenuSource,
+    TwoWheelDrive,
+    SimpleDriveTest,
 ]
 teleop_layer_classes = [
-#    TwoWheelDrive,
-#    TankDriveControls,
-#    GamepadInputGenerator,
+    TwoWheelDrive,
+    TankDriveControls,
+    GamepadInputGenerator,
 ]
 robot_controller = RobotController(robot)
 

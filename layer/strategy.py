@@ -91,3 +91,23 @@ class SafeStrategy(Layer):
 
     def accept_task(self, task):
         raise UnsupportedTaskError(self, task)
+
+
+class SimpleDriveTest(Layer):
+    """Drives in a square indefinitely."""
+
+    def __init__(self, init_info):
+        self._straight = False # Inverted before first update
+
+    def is_task_done(self):
+        return False
+
+    def update(self):
+        self._straight = not self._straight
+        if self._straight:
+            return AxialMovementTask(convert(1, "m", "m"))
+        else:
+            return TurnTask(convert(-0.25, "rev", "rad"))
+
+    def accept_task(self, task):
+        raise UnsupportedTaskError(self, task)
