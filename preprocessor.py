@@ -158,8 +158,8 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
                 f"{indent * 4}if not translation_result:",
                 f"{indent * 5}tb = tb.tb_next",
                 f"{indent * 5}continue",
-                f"{indent * 4}module_name, line_no = translation_result",
-                f"{indent * 4}frame_lines.append(f'  File \"{{module_name + \".py\"}}\", line {{line_no}}, in {{tb.tb_frame.f_code.co_name}}')",
+                f"{indent * 4}module_path, line_no = translation_result",
+                f"{indent * 4}frame_lines.append(f'  File \"{{module_path}}\", line {{line_no}}, in {{tb.tb_frame.f_code.co_name}}')",
                 f"{indent * 4}tb = tb.tb_next",
                 f"{indent * 3}print('\\n'.join(frame_lines))",
                 f"{indent * 3}print(type(e).__name__ + (': ' if str(e) else '') + str(e))",
@@ -173,7 +173,7 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
             for module in module_list:
                 module_line_entries.append(
                     f"{indent}elif line_no >= {running_line_num}:\n"
-                    f"{indent * 2}return '{module.name}', line_no - {running_line_num + 5}\n"
+                    f"{indent * 2}return '{module.file_path}', line_no - {running_line_num + 5}\n"
                 )
                 running_line_num += module.body_text.count("\n")
             module_line_entries.append(
