@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from task import UnsupportedTaskError
 
 
 class Layer(metaclass=ABCMeta):
@@ -29,27 +30,13 @@ class Layer(metaclass=ABCMeta):
         raise NotImplemented
 
     @abstractmethod
-    def accept_task(task):
+    def accept_task(self, task):
         """Sets the layer's current task.
 
         Accepts a task from the above layer. Should only be called after is_task_done() returns
         True.
         """
         raise NotImplemented
-
-
-class TeleopLayer(Layer):
-    """The base class of non-input-generating teleop layers.
-
-    Layers used in the teleop robot mode should always present as done because they must accept a
-    new "task" every update. The input generator at the top layer should always be asked for a new
-    task.
-    This class should not be the base of input generating layers, which should never present as
-    done.
-    """
-
-    def is_task_done(self):
-        return True
 
 
 class InputGenerator(Layer):
@@ -63,6 +50,49 @@ class InputGenerator(Layer):
 
     def is_task_done(self):
         return False
+
+    def accept_task(self, task):
+        raise UnsupportedTaskError(self, task)
+
+
+class QueuedLayer(Layer):
+    """The base class of layers that produce a queue of subtasks for each accepted task.
+
+    Layers should inherit from this class if each call to accept_task generates a queue of subtasks
+    to return from update, and no additional processing is needed in the update function.
+    """
+
+    """Sentinel value indicating that there is no next subtask, since None is a valid value."""
+    _no_subtask = object()
+
+    """Sentinel value indicating the next subtask should be retrieved from the queue."""
+    _consumed_subtask = object()
+
+    def __init__(self, init_info):
+        self._next_subtask = _no_subtask
+        self._subtask_iter = iter([])
+
+    def is_task_done(self):
+        if self._next_subtask is self._consumed_subtask:
+            self._next_subtask = next(self._subtask_iter, self._no_subtask)
+        return self._next_subtask is self._no_subtask
+
+    def update(self):
+        # Assumes executor always calls is_task_done to prepare next task before calling update
+        subtask = self._next_subtask
+        self._next_subtask = self._consumed_subtask
+        return subtask
+
+    def _submit_subtask_queue(self, queue):
+        """Submits the queue of subtasks that the layer will emit each call to update.
+
+        Call this method from accept_task or __init__ with an iterable of subtasks generated from
+        the accepted task.
+        Positional parameters:
+        queue -- the iterable of subtasks to gradually emit after every update
+        """
+        self._subtask_iter = iter(queue)
+        self._next_subtask = _consumed_subtask
 
 
 class LayerSetupInfo:

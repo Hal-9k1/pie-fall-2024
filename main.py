@@ -2,7 +2,6 @@
 #from layer import SimpleDriveTest
 #from layer.controls import TankDriveControls
 #from layer.controls import GamepadInputGenerator
-from layer.test import *
 from controller import RobotController
 from mock_robot import MockRobot
 

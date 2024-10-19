@@ -38,13 +38,14 @@ class MockRobot:
         }
     }
 
-    def __init__(self, max_devices, motor_ticks_per_sec=2000):
+    def __init__(self, max_devices, motor_ticks_per_sec=2000, start_pos="left"):
         logger.warn("NOTICE: MockRobot instance constructed.")
         self._devices = {}
         self._device_types = {}
         self._max_devices = max_devices
         self._device_counts = {}
         self._motor_ticks_per_sec = motor_ticks_per_sec
+        self.start_pos = start_pos
         for device_type in self._default_device_properties:
             self._device_counts[device_type] = 0
 
