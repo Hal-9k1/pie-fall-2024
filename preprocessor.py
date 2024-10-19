@@ -266,7 +266,7 @@ if __name__ == "__main__":
             print(f"{build_fn}: {deps}", file=output_file)
             print(f"\tpython {sys.argv[0]} {sys.argv[1]} --build-file={build_fn}",
                 file=output_file)
-            print(f"{dep_fn}: $(filter $(shell find -name '*.py' -not -path './.*'),{deps})",
+            print(f"{dep_fn}: $(filter $(shell find -name \"*.py\" -not -path \"./.*\"),{deps})",
                 file=output_file)
             print((f"\tpython {sys.argv[0]} {sys.argv[1]} --dependency-file={dep_fn} "
                 f"--build-file={build_fn}"),
