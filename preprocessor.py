@@ -10,13 +10,36 @@ class ModuleInfo:
         self.file_path = file_path
         self.body_text = body
 
+def file_path_from_basename(file_path, rel_file_path):
+    if os.path.isfile(file_path + ".py"):
+        # it's a module
+        return file_path + ".py"
+    if os.path.isfile(os.path.join(file_path, "__init__.py")):
+        # it's a package
+        return os.path.join(file_path, "__init__.py")
+    # doesn't exist
+    return None
+
+def escape_module_name(name):
+    return name.replace("_", "__").replace(".", "_")
+
+def unescape_module_name(name):
+    return '_'.join(segment.replace("_", ".") for segment in name.split("__"))
+
+def trim_common_module_segments(module, compare_against):
+    common_strlen = 0
+    for segments in zip(unescape_module_name(module).split("_"),
+        unescape_module_name(compare_against).split("_")):
+        if segments[0] == segments[1]:
+            common_strlen += 1 + len(segments[0])
+        else:
+            break
+    return module[common_strlen:]
+
 def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, import_cursor=0,
         auto_detect_entry_points=True):
     """Preprocesses a python script by recursively transcluding imported files."""
 
-    if not os.path.exists(file_path):
-        #print(file_path)
-        return
     if module_list == None:
         module_list = []
         is_top_level = True
@@ -36,20 +59,23 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
               module_buffer.append(line)  
             elif words[0] == "import" or words[0] == "from":
                 path_segments = words[1].split(".")
-                imported_module_name = path_segments[-1].strip()
-                prev_imported_module = next((module for module in module_list if module.name == imported_module_name), None)
+                imported_module_name = words[1].replace("_", "__").replace(".", "_")
+                prev_imported_module = next((module for module in module_list
+                    if module.name == imported_module_name
+                    or (module_name and trim_common_module_segments(module.name, module_name) ==
+                    imported_module_name)), None)
                 module_exports = f"_HELPER_module_export_dict['{imported_module_name}']"
-                import_file_path = os.path.join(*path_segments).strip() + ".py"
+                import_file_path = file_path_from_basename(os.path.join(*path_segments), module_name)
                 if prev_imported_module:
                     func_call = prev_imported_module.func_call
+                elif not import_file_path:
+                    # module not found. assume it's built in and leave the import statement intact
+                    module_buffer.append(line)
+                    continue
                 else:
                     imported_body_text = process_file(import_file_path,
                         indent=indent, module_name=imported_module_name, module_list=module_list,
                         import_cursor=import_cursor + 1)
-                    if not imported_body_text:
-                        # module not found. assume it's built in and leave the import statement intact
-                        module_buffer.append(line)
-                        continue
                     func_call = f"_HELPER_import_{imported_module_name}()"
                     imported_module_buffer = [
                         f"def {func_call}:",
