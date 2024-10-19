@@ -26,7 +26,17 @@ class TwoWheelDrive(Layer):
     """Half the distance between the two driving wheels in meters."""
     _wheel_span_radius = 0.84
 
+    """Unitless, experimentally determined constant (ew) measuring lack of friction. 
+
+    Measures lack of friction between wheels and floor material. Goal delta distances are directly
+    proportional to this.
+    """
+    _slipping_constant = 1
+
     def __init__(self, init_info):
+        # Make sure to set ALL desired properties, even if they're defaults. The motor controller
+        # might have remembered state from a different drive layer if it hasn't been power cycled
+        # since then
         self._left_wheel = Wheel(
             Motor(init_info.get_robot(), self._drive_koalabear, "a/b")
                 .set_invert(False)
@@ -39,8 +49,11 @@ class TwoWheelDrive(Layer):
                 .set_pid(None, None, None),
             self._wheel_radius,
             self._ticks_per_rot)
+        # Initial values not important, but they need to be defined for the first call to
+        # is_task_done to not error
         self._left_start_pos = 0
         self._right_start_pos = 0
+        # Task will appear done on first call to is_task_done
         self._left_goal_delta = 0
         self._right_goal_delta = 0
 
@@ -49,28 +62,37 @@ class TwoWheelDrive(Layer):
             == (self._left_goal_delta < 0)) or self._left_goal_delta == 0
         right_done = ((self._right_wheel.get_distance() - self._right_start_pos < 0)
             == (self._right_goal_delta < 0)) or self._right_goal_delta == 0
+        # A more intelligent system would detect whether both wheels are near their goals rather
+        # than whether they have both passed them, but I'm not sure what to set the threshold at
+        # without testing.
         done = left_done and right_done
         if done:
+            # Setting motor velocities in a method meant to check state gives me the creeps, but
+            # there's nowhere else to do it
             self._left_wheel.set_velocity(0)
             self._right_wheel.set_velocity(0)
         return done
 
     def update(self):
-        pass # Adaptive velocity control goes here
+        pass # Adaptive velocity control should go here
 
     def accept_task(self, task):
+        # Save current positions
         self._left_start_pos = self._left_wheel.get_distance()
         self._right_start_pos = self._right_wheel.get_distance()
         if isinstance(task, AxialMovementTask):
             self._left_goal_delta = task.distance
             self._right_goal_delta = task.distance
         elif isinstance(task, TurnMovementTask):
-            self._left_goal_delta = -task.angle * self._wheel_span_radius * self._gear_ratio
-            self._right_goal_delta = task.angle * self._wheel_span_radius * self._gear_ratio
+            # "Effective" as in "multiplied by all the weird constants we need"
+            effective_radius = self._wheel_span_radius * self._gear_ratio * self._slipping_constant
+            self._left_goal_delta = -task.angle * effective_radius
+            self._right_goal_delta = task.angle * effective_radius
         elif isinstance(task, TankDriveTask):
+            # Teleop, set deltas to 0 to pretend we're done
             self._left_goal_delta = 0
             self._right_goal_delta = 0
-            # Clamp to 1 to prevent upscaling:
+            # Clamp to 1 to prevent upscaling
             max_abs_power = max(abs(task.left), abs(task.right), 1)
             self._left_wheel.set_velocity(task.left / max_abs_power)
             self._right_wheel.set_velocity(task.right / max_abs_power)
