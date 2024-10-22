@@ -1,6 +1,7 @@
 from math import pi
 
 units_per_m = {
+    "mm": 1000,
     "cm": 100,
     "in": 100 / 2.54,
     "ft": 100 / 2.54 / 12,
