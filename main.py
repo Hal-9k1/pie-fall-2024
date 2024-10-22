@@ -9,9 +9,14 @@ from layer.strategy import CubePlateStrategy
 from layer.strategy import SafeStrategy
 from layer.strategy import SimpleDriveTest
 from mock_robot import MockRobot
+from sys import stdout
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+log_out = logging.StreamHandler(stdout)
+log_out.setFormatter(logging.Formatter("[%(levelname)s %(name)s] %(message)s"))
+logger.addHandler(log_out)
 
 def is_dawn():
     try:
@@ -31,7 +36,7 @@ def get_robot():
 
 auto_layer_classes = [
     TwoWheelDrive,
-    SafeStrategy,
+    SimpleDriveTest
 ]
 teleop_layer_classes = [
     TwoWheelDrive,

@@ -58,8 +58,9 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
             if not len(words):
               module_buffer.append(line)  
             elif words[0] == "import" or words[0] == "from":
-                path_segments = words[1].split(".")
-                imported_module_name = words[1].replace("_", "__").replace(".", "_")
+                imported_module_raw_name = words[1]
+                path_segments = imported_module_raw_name.split(".")
+                imported_module_name = escape_module_name(imported_module_raw_name)
                 prev_imported_module = next((module for module in module_list
                     if module.name == imported_module_name
                     or (module_name and trim_common_module_segments(module.name, module_name) ==
@@ -81,6 +82,7 @@ def process_file(file_path, indent=" " * 4, module_name=None, module_list=None, 
                         f"def {func_call}:",
                         f"{indent}if '{imported_module_name}' in _HELPER_module_export_dict:",
                         f"{indent * 2}return",
+                        f"{indent}__name__ = '{imported_module_raw_name}'",
                         "",
                         f"{indent}# Begin imported file."
                     ]
