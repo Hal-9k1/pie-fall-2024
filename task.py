@@ -35,7 +35,8 @@ class TurnTask:
 class TankDriveTask:
     """Specifies relative accelerations for left and right side of the robot.
 
-    Despite the name, not necessarily produced by tank drive controls."""
+    Despite the name, not necessarily produced by tank drive controls.
+    """
 
     """The relative acceleration to apply to the left side of the robot.
 
@@ -46,3 +47,21 @@ class TankDriveTask:
 
     Positive values indicate forward movement and negative values indicate backward."""
     right: float
+
+
+@dataclass
+class GamepadInputTask:
+    """Carries a snapshot of Gamepad input."""
+
+    joystick_left_x: float
+    joystick_left_y: float
+    joystick_right_x: float
+    joystick_right_y: float
+    button_a: bool
+    button_b: bool
+    button_x: bool
+    button_y: bool
+    left_bumper: bool
+    left_trigger: bool
+    right_bumper: bool
+    right_trigger: bool
