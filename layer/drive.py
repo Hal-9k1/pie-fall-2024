@@ -17,19 +17,23 @@ class TwoWheelDrive(Layer):
 
     """The id of the drive motor controller."""
     _drive_koalabear = "6_5011048539317462848"
+
     """The number of encoder ticks per rotation of the drive motor shafts.
 
     This value was determined experimentally. True value is possibly 16 ticks
     per rotation * 1:70 motor gearing.
     """
     _ticks_per_rot = 1100
+
     """The radius of the wheels in meters."""
     _wheel_radius = convert(10.5 / 2, "cm", "m")
+
     """The effective gear ratio of the wheels to the drive motor shafts.
 
     Expressed as wheel_teeth / hub_gear_teeth.
     """
     _gear_ratio = 80 / 36
+
     """Half the distance between the two driving wheels in meters."""
     _wheel_span_radius = convert(36, "cm", "m")
 
@@ -65,22 +69,21 @@ class TwoWheelDrive(Layer):
         self._right_goal_delta = 0
         self._is_auto = True
 
-        self._done_count = 10
-
     def is_task_done(self):
-        left_done = (((self._left_wheel.get_distance() - self._left_start_pos) < 0)
-            == (self._left_goal_delta < 0)) or self._left_goal_delta == 0
-        right_done = (((self._right_wheel.get_distance() - self._right_start_pos) < 0)
-            == (self._right_goal_delta < 0)) or self._right_goal_delta == 0
+        left_delta = self._left_wheel.get_distance() - self._left_start_pos
+        left_delta_greater = abs(left_delta) >= self._left_goal_delta
+        left_same_sign = (left_delta < 0) == (self._left_goal_delta < 0)
+        left_done = left_delta_greater and left_same_sign or self._left_goal_delta == 0
+
+        right_delta = self._right_wheel.get_distance() - self._right_start_pos
+        right_delta_greater = abs(right_delta) >= self._right_goal_delta
+        right_same_sign = (right_delta < 0) == (self._right_goal_delta < 0)
+        right_done = right_delta_greater and right_same_sign or self._right_goal_delta == 0
+
         # A more intelligent system would detect whether both wheels are near their goals rather
         # than whether they have both passed them, but I'm not sure what to set the threshold at
         # without testing.
         done = left_done and right_done
-        if done and self._done_count > 0:
-            logger.warn(f"Finished drive action, left delta {self._left_goal_delta} right delta {self._right_goal_delta} "
-                f"left initial {self._left_start_pos} right initial {self._right_start_pos}"
-            )
-        self._done_count -= 1
         if done and self._is_auto:
             # Setting motor velocities in a method meant to check state gives me the creeps, but
             # there's nowhere else to do it
