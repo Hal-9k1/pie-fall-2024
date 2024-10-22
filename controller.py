@@ -3,22 +3,19 @@ from layer import LayerSetupInfo
 class RobotController:
     """Manages robot state between setup and the main loops."""
 
-    def __init__(self, robot):
-        """Creates a RobotController.
-
-        Positional arguments:
-        robot -- the Robot or Robot-like object used to communicate with hardware
-        """
-        self._layer_setup_info = LayerSetupInfo(robot, self)
+    def __init__(self):
+        """Creates a RobotController."""
         self._update_listeners = []
 
-    def setup(self, layer_classes):
+    def setup(self, robot, layer_classes):
         """Initializes the controller with instances of the given layer classes.
 
         Positional arguments:
+        robot -- the Robot or Robot-like object used to communicate with hardware
         layer_classes -- the list of layer classes, bottommost layer first
         """
-        self._layers = [Class(self._layer_setup_info) for Class in layer_classes]
+        layer_setup_info = LayerSetupInfo(robot, self)
+        self._layers = [Class(layer_setup_info) for Class in layer_classes]
 
     def update(self):
         """Performs incremental work and returns whether layers have completed all tasks.

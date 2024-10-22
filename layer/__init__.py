@@ -18,7 +18,7 @@ class Layer(metaclass=ABCMeta):
 
         Returns True if the layer has finished processing the last accepted task, if any.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     def update(self):
@@ -27,7 +27,7 @@ class Layer(metaclass=ABCMeta):
         Calculates the next subordinate task that should be submitted to the below layer. The return
         value of a bottom layer's update function is not used.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     def accept_task(self, task):
@@ -36,7 +36,7 @@ class Layer(metaclass=ABCMeta):
         Accepts a task from the above layer. Should only be called after is_task_done() returns
         True.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class InputGenerator(Layer):
