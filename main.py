@@ -1,45 +1,56 @@
 from controller import RobotController
+from layer.controls import BumperControls
 from layer.controls import GamepadInputGenerator
 from layer.controls import TankDriveControls
+from layer.controls import ZeldaControls
 from layer.drive import TwoWheelDrive
 from layer.strategy import CubeDropStrategy
 from layer.strategy import CubePlateStrategy
 from layer.strategy import SafeStrategy
 from layer.strategy import SimpleDriveTest
 from mock_robot import MockRobot
+import logging
 
-try:
-    robot = Robot
-    is_dawn = True
-except NameError:
-    robot = MockRobot({
-        "koalabear": 2,
-        "servocontroller": 0,
-    })
-    is_dawn = False
+logger = logging.getLogger(__name__)
+
+def is_dawn():
+    try:
+        Robot
+        return True
+    except NameError:
+        return False
+
+def get_robot():
+    if is_dawn():
+        return Robot
+    else:
+        return MockRobot({
+            "koalabear": 2,
+            "servocontroller": 0,
+        })
 
 auto_layer_classes = [
     TwoWheelDrive,
-    SimpleDriveTest,
+    SafeStrategy,
 ]
 teleop_layer_classes = [
     TwoWheelDrive,
-    TankDriveControls,
+    ZeldaControls,
     GamepadInputGenerator,
 ]
-robot_controller = RobotController(robot)
+robot_controller = RobotController()
 
 @_PREP_ENTRY_POINT
 def autonomous_setup():
-    robot_controller.setup(auto_layer_classes)
+    robot_controller.setup(get_robot(), auto_layer_classes)
 @_PREP_ENTRY_POINT
 def autonomous_main():
-    if robot_controller.update() and not is_dawn:
+    if robot_controller.update() and not is_dawn():
         exit(0)
 @_PREP_ENTRY_POINT
 def teleop_setup():
-    robot_controller.setup(teleop_layer_classes)
+    robot_controller.setup(get_robot(), teleop_layer_classes)
 @_PREP_ENTRY_POINT
 def teleop_main():
-    if robot_controller.update() and not is_dawn:
+    if robot_controller.update() and not is_dawn():
         exit(0)
