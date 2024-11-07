@@ -23,7 +23,7 @@ class TwoWheelDrive(Layer):
     This value was determined experimentally. True value is possibly 16 ticks
     per rotation * 1:70 motor gearing.
     """
-    _ticks_per_rot = 1100
+    _ticks_per_rot = 1120
 
     """The radius of the wheels in meters."""
     _wheel_radius = convert(10.5 / 2, "cm", "m")
@@ -42,7 +42,11 @@ class TwoWheelDrive(Layer):
     Measures lack of friction between wheels and floor material. Goal delta distances are directly
     proportional to this.
     """
-    _slipping_constant = 1
+    _slipping_constant = 0.65
+
+    _left_speed = -1 / 2
+    _right_speed = 3/4 / 2
+    _p = 0
 
     def __init__(self, init_info):
         # Make sure to set ALL desired properties, even if they're defaults. The motor controller
@@ -56,7 +60,7 @@ class TwoWheelDrive(Layer):
             self._ticks_per_rot)
         self._right_wheel = Wheel(
             Motor(init_info.get_robot(), self._drive_koalabear, "a")
-                .set_invert(False)
+                .set_invert(True)
                 .set_pid(None, None, None),
             self._wheel_radius,
             self._ticks_per_rot)
@@ -80,6 +84,12 @@ class TwoWheelDrive(Layer):
         right_same_sign = (right_delta < 0) == (self._right_goal_delta < 0)
         right_done = right_delta_greater and right_same_sign or self._right_goal_delta == 0
 
+        if self._p == 5000:
+            print(f"ld {left_delta} ldg {left_delta_greater} lss {left_same_sign} done {left_done}")
+            print(f"rd {right_delta} ldg {right_delta_greater} lss {right_same_sign} done {right_done}")
+            self._p = 0
+        self._p += 1
+
         # A more intelligent system would detect whether both wheels are near their goals rather
         # than whether they have both passed them, but I'm not sure what to set the threshold at
         # without testing.
@@ -98,15 +108,14 @@ class TwoWheelDrive(Layer):
         # Save current positions
         self._left_start_pos = self._left_wheel.get_distance()
         self._right_start_pos = self._right_wheel.get_distance()
+        delta_fac = self._gear_ratio * self._slipping_constant
         self._is_auto = True
         if isinstance(task, AxialMovementTask):
-            self._left_goal_delta = task.distance
-            self._right_goal_delta = task.distance
+            self._left_goal_delta = task.distance * delta_fac
+            self._right_goal_delta = task.distance * delta_fac
         elif isinstance(task, TurnTask):
-            # "Effective" as in "multiplied by all the weird constants we need"
-            effective_radius = self._wheel_span_radius * self._gear_ratio * self._slipping_constant
-            self._left_goal_delta = -task.angle * effective_radius
-            self._right_goal_delta = task.angle * effective_radius
+            self._left_goal_delta = -task.angle * self._wheel_span_radius * delta_fac
+            self._right_goal_delta = task.angle * self._wheel_span_radius * delta_fac
         elif isinstance(task, TankDriveTask):
             # Teleop, set deltas to 0 to pretend we're done
             self._is_auto = False
@@ -121,5 +130,6 @@ class TwoWheelDrive(Layer):
         else:
             raise UnsupportedTaskError(self, task)
         # Only for autonomous:
-        self._left_wheel.set_velocity(copysign(1, self._left_goal_delta))
-        self._right_wheel.set_velocity(copysign(1, self._right_goal_delta))
+        self._left_wheel.set_velocity(copysign(1, self._left_goal_delta) * self._left_speed)
+        self._right_wheel.set_velocity(copysign(1, self._right_goal_delta) * self._right_speed)
+        print(f"left goal delta {self._left_goal_delta} right goal delta {self._right_goal_delta}")
